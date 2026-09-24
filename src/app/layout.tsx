@@ -11,11 +11,15 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'ChatApp - Messagerie',
   description: 'Application de messagerie instantanée',
-  manifest: '/manifest.json', // 👈 Indique au navigateur que c'est une PWA
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'ChatApp',
+  },
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
 }
 
