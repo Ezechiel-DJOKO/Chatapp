@@ -10,7 +10,7 @@ import EmojiPicker from './EmojiPicker'
 import UserAvatar from './UserAvatar'
 import MessageContextMenu from './MessageContextMenu'
 import ForwardModal from './ForwardModal'
-import { Mic, Trash2 } from 'lucide-react'
+import { ArrowLeft, Mic, Trash2 } from 'lucide-react'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import {
@@ -458,48 +458,39 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
     )
   }
 
-  return (
+    return (
     <div className="flex-1 flex flex-col h-full bg-gray-50 dark:bg-gray-900 transition-colors">
-            {/* En-tête */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 flex items-center gap-3 shrink-0">
-        {/* Bouton retour / menu — TOUJOURS visible sur mobile */}
+      {/* En-tête */}
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center gap-3 shrink-0">
+        {/* Bouton retour (Flèche) pour mobile */}
         <button
           onClick={onToggleSidebar}
-          className="p-2 -ml-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl md:hidden text-gray-700 dark:text-gray-200"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden text-gray-600 dark:text-gray-300"
           title="Retour"
         >
-          <Menu size={22} />
+          <ArrowLeft size={22} />
         </button>
 
-        {activeChat ? (
-          <>
-            <UserAvatar
-              src={activeChat.avatar}
-              username={activeChat.name}
-              size="md"
-              isOnline={isOtherOnline}
-              showStatus={activeChat.type === 'conversation'}
-            />
-            <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-                {activeChat.name}
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {activeChat.type === 'conversation'
-                  ? isOtherOnline
-                    ? '🟢 En ligne'
-                    : '⚪ Hors ligne'
-                  : `👥 ${(activeChat.data as Group).members?.length || 0} membres`}
-              </p>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1">
-            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">
-              ChatApp
-            </h2>
-          </div>
-        )}
+        <UserAvatar
+          src={activeChat.avatar}
+          username={activeChat.name}
+          size="md"
+          isOnline={isOtherOnline}
+          showStatus={activeChat.type === 'conversation'}
+        />
+
+        <div className="flex-1 min-w-0">
+          <h2 className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+            {activeChat.name}
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {activeChat.type === 'conversation'
+              ? isOtherOnline
+                ? '🟢 En ligne'
+                : '⚪ Hors ligne'
+              : `👥 ${(activeChat.data as Group).members?.length || 0} membres`}
+          </p>
+        </div>
       </header>
 
       {/* Messages */}

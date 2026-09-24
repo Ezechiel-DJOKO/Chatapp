@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 import { getCurrentUserId } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
@@ -14,34 +12,27 @@ export async function POST(req: NextRequest) {
     const file: File | null = data.get('file') as unknown as File
 
     if (!file) {
-      return NextResponse.json({ error: 'Aucun fichier' }, { status: 400 })
+      return NextResponse.json({ error: 'Aucun fichier fourni' }, { status: 400 })
+    }
+
+    // Limite à 8Mo pour éviter les requêtes trop lourdes
+    if (file.size > 8 * 1024 * 1024) {
+      return NextResponse.json({ error: 'Fichier trop grand (Max 8Mo)' }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
+    const mimeType = file.type || 'application/octet-stream'
 
-    // Créer un nom unique sécurisé
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-    const uniqueName = `${Date.now()}-${safeName}`
-    
-    // Chemin vers public/uploads
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-
-    // S'assurer que le dossier existe
-    await mkdir(uploadDir, { recursive: true })
-
-    // Sauvegarder le fichier
-    const filePath = path.join(uploadDir, uniqueName)
-    await writeFile(filePath, buffer)
-
-    // URL publique
-    const url = `/uploads/${uniqueName}`
+    // Conversion en Base64 Data URL (Fonctionne 100% sur Vercel & Render sans disque dur)
+    const base64 = buffer.toString('base64')
+    const dataUrl = `data:${mimeType};base64,${base64}`
 
     return NextResponse.json({
-      url,
+      url: dataUrl,
       name: file.name,
       size: file.size,
-      mime: file.type,
+      mime: mimeType,
     })
   } catch (error) {
     console.error('Upload Error:', error)

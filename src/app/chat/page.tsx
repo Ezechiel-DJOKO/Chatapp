@@ -6,32 +6,17 @@ import { useAuth } from '@/context/AuthContext'
 import { ActiveChat } from '@/types'
 import ChatSidebar from '@/components/ChatSidebar'
 import ChatWindow from '@/components/ChatWindow'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 export default function ChatPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const [activeChat, setActiveChat] = useState<ActiveChat | null>(null)
-  const isMobile = useMediaQuery('(max-width: 767px)')
-
-  // Sur mobile : sidebar ouverte si aucun chat sélectionné
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/login')
     }
   }, [user, loading, router])
-
-  // Sur mobile, si on sélectionne un chat → fermer la sidebar
-  // Si on revient (activeChat = null) → rouvrir la sidebar
-  useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(!activeChat)
-    } else {
-      setSidebarOpen(true) // desktop : toujours visible
-    }
-  }, [activeChat, isMobile])
 
   if (loading || !user) {
     return (
@@ -42,47 +27,31 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-[100dvh] flex overflow-hidden bg-white dark:bg-gray-950">
-      {/* SIDEBAR */}
+    <div className="h-[100dvh] w-full flex overflow-hidden bg-white dark:bg-gray-950">
+      {/* SIDEBAR (Gaucher sur PC, Plein écran sur mobile si pas de chat actif) */}
       <div
-        className={`${
-          isMobile
-            ? sidebarOpen
-              ? 'translate-x-0 w-full'
-              : '-translate-x-full w-0'
-            : 'translate-x-0 w-80 lg:w-96'
-        } shrink-0 h-full transition-all duration-300 ease-in-out z-30 ${
-          isMobile ? 'fixed inset-0' : 'relative'
+        className={`h-full flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 ${
+          activeChat
+            ? 'hidden md:flex md:w-80 lg:w-96 shrink-0'
+            : 'flex w-full md:w-80 lg:w-96 shrink-0'
         }`}
       >
         <ChatSidebar
           activeChat={activeChat}
-          onSelectChat={(chat) => {
-            setActiveChat(chat)
-            if (isMobile) setSidebarOpen(false)
-          }}
+          onSelectChat={(chat) => setActiveChat(chat)}
           isOpen={true}
-          onClose={() => {
-            if (isMobile && activeChat) setSidebarOpen(false)
-          }}
         />
       </div>
 
-      {/* FENÊTRE DE CHAT */}
+      {/* FENÊTRE DE CHAT (Droite sur PC, Plein écran sur mobile si chat actif) */}
       <div
-        className={`flex-1 flex flex-col min-w-0 h-full ${
-          isMobile && sidebarOpen ? 'hidden' : 'flex'
+        className={`h-full flex-col flex-1 min-w-0 bg-gray-50 dark:bg-gray-900 ${
+          activeChat ? 'flex w-full' : 'hidden md:flex'
         }`}
       >
         <ChatWindow
           activeChat={activeChat}
-          onToggleSidebar={() => {
-            // Sur mobile = bouton retour → revenir à la liste
-            if (isMobile) {
-              setActiveChat(null)
-              setSidebarOpen(true)
-            }
-          }}
+          onToggleSidebar={() => setActiveChat(null)}
         />
       </div>
     </div>
