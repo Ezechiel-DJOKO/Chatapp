@@ -10,6 +10,8 @@ interface SocketContextType {
   isConnected: boolean
 }
 
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || undefined
+
 const SocketContext = createContext<SocketContextType>({
   socket: null,
   onlineUsers: [],
@@ -32,9 +34,9 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const newSocket = io({
-      transports: ['websocket', 'polling'],
-    })
+    const newSocket = io(SOCKET_URL, {
+  transports: ['websocket', 'polling'],
+})
 
     newSocket.on('connect', () => {
       console.log('🔌 Socket connecté')
