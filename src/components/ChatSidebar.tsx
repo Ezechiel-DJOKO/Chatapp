@@ -9,7 +9,6 @@ import GroupList from './GroupList'
 import NewChatModal from './NewChatModal'
 import CreateGroupModal from './CreateGroupModal'
 import UserAvatar from './UserAvatar'
-import { Settings } from 'lucide-react'
 import ProfileModal from './ProfileModal'
 import {
   MessageCircle,
@@ -18,6 +17,7 @@ import {
   LogOut,
   UserPlus,
   UsersRound,
+  Settings,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -64,13 +64,11 @@ export default function ChatSidebar({
     }
   }, [])
 
-  // Charger les données au démarrage
   useEffect(() => {
     fetchConversations()
     fetchGroups()
   }, [fetchConversations, fetchGroups])
 
-  // Écouter les mises à jour en temps réel
   useEffect(() => {
     if (!socket) return
 
@@ -88,8 +86,7 @@ export default function ChatSidebar({
   }, [socket, fetchConversations, fetchGroups])
 
   const handleSelectConversation = (conv: Conversation) => {
-    const otherUser =
-      conv.user1Id === user?.id ? conv.user2 : conv.user1
+    const otherUser = conv.user1Id === user?.id ? conv.user2 : conv.user1
     onSelectChat({
       type: 'conversation',
       id: conv.id,
@@ -142,13 +139,9 @@ export default function ChatSidebar({
     toast.success('Déconnecté avec succès')
   }
 
-  // Filtrage par recherche
   const filteredConversations = conversations.filter((conv) => {
-    const otherUser =
-      conv.user1Id === user?.id ? conv.user2 : conv.user1
-    return otherUser.username
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
+    const otherUser = conv.user1Id === user?.id ? conv.user2 : conv.user1
+    return otherUser.username.toLowerCase().includes(searchQuery.toLowerCase())
   })
 
   const filteredGroups = groups.filter((group) =>
@@ -160,62 +153,60 @@ export default function ChatSidebar({
       <aside
         className={`${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0 fixed md:relative z-30 w-full max-w-[340px] md:w-80 lg:w-96 h-full bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out`}
+        } md:translate-x-0 fixed md:relative z-30 w-full max-w-[340px] md:w-80 lg:w-96 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-transform duration-300 ease-in-out`}
       >
-        {/* === EN-TÊTE === */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
+        {/* === EN-TÊTE UTILISATEUR === */}
+        <div className="p-4 border-b border-gray-100 dark:border-gray-800 shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            {/* Avatar + infos */}
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <UserAvatar
                 src={user?.avatar}
                 username={user?.username || ''}
                 size="md"
                 isOnline={true}
               />
-              <div>
-                <h1 className="font-bold text-gray-900">
+              <div className="min-w-0">
+                <h1 className="font-bold text-gray-900 dark:text-white truncate text-sm sm:text-base">
                   {user?.username}
                 </h1>
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`w-2 h-2 rounded-full ${
+                    className={`w-2 h-2 rounded-full shrink-0 ${
                       isConnected ? 'bg-green-500' : 'bg-red-500'
                     }`}
                   />
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
                     {isConnected ? 'En ligne' : 'Déconnecté'}
                   </span>
                 </div>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-              title="Se déconnecter"
-            >
-                          <div className="flex items-center gap-1">
+
+            {/* Boutons : 1 Settings + 1 Logout uniquement */}
+            <div className="flex items-center gap-1 shrink-0">
               <button
+                type="button"
                 onClick={() => setShowProfileModal(true)}
-                className="p-2 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                className="p-2 text-gray-500 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-gray-800 rounded-xl transition-colors"
                 title="Profil & Paramètres"
               >
                 <Settings size={20} />
               </button>
+
               <button
+                type="button"
                 onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
+                className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                 title="Se déconnecter"
               >
                 <LogOut size={20} />
               </button>
             </div>
-
-              <LogOut size={20} />
-            </button>
           </div>
 
-          {/* Recherche */}
-          <div className="relative">
+          {/* Recherche (une seule fois) */}
+          <div className="relative mt-4">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               size={16}
@@ -225,19 +216,19 @@ export default function ChatSidebar({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher..."
-              className="w-full pl-9 pr-4 py-2 bg-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-800 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-gray-700 transition-all"
             />
           </div>
         </div>
 
         {/* === ONGLETS === */}
-        <div className="flex border-b border-gray-100">
+        <div className="flex border-b border-gray-100 dark:border-gray-800 shrink-0">
           <button
             onClick={() => setTab('chats')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               tab === 'chats'
-                ? 'text-primary-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             <MessageCircle size={18} />
@@ -250,8 +241,8 @@ export default function ChatSidebar({
             onClick={() => setTab('groups')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
               tab === 'groups'
-                ? 'text-emerald-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
             <UsersRound size={18} />
@@ -263,12 +254,10 @@ export default function ChatSidebar({
         </div>
 
         {/* === BOUTON D'ACTION === */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 shrink-0">
           <button
             onClick={() =>
-              tab === 'chats'
-                ? setShowNewChat(true)
-                : setShowCreateGroup(true)
+              tab === 'chats' ? setShowNewChat(true) : setShowCreateGroup(true)
             }
             className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-white transition-colors ${
               tab === 'chats'
@@ -296,18 +285,14 @@ export default function ChatSidebar({
             <ConversationList
               conversations={filteredConversations}
               activeId={
-                activeChat?.type === 'conversation'
-                  ? activeChat.id
-                  : undefined
+                activeChat?.type === 'conversation' ? activeChat.id : undefined
               }
               onSelect={handleSelectConversation}
             />
           ) : (
             <GroupList
               groups={filteredGroups}
-              activeId={
-                activeChat?.type === 'group' ? activeChat.id : undefined
-              }
+              activeId={activeChat?.type === 'group' ? activeChat.id : undefined}
               onSelect={handleSelectGroup}
             />
           )}
@@ -333,7 +318,7 @@ export default function ChatSidebar({
         onClose={() => setShowCreateGroup(false)}
         onGroupCreated={handleGroupCreated}
       />
-            <ProfileModal
+      <ProfileModal
         isOpen={showProfileModal}
         onClose={() => setShowProfileModal(false)}
       />
