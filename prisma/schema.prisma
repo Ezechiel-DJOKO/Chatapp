@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  avatar    String?
+  bio       String?
+  isOnline  Boolean  @default(false)
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sentMessages     Message[]         @relation("SentMessages")
+  conversations1   Conversation[]    @relation("User1Conversations")
+  conversations2   Conversation[]    @relation("User2Conversations")
+  groupMemberships GroupMember[]
+  groupsCreated    Group[]           @relation("GroupCreator")
+  reactions        MessageReaction[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user1    User      @relation("User1Conversations", fields: [user1Id], references: [id])
+  user2    User      @relation("User2Conversations", fields: [user2Id], references: [id])
+  messages Message[]
+
+  @@unique([user1Id, user2Id])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  avatar      String?
+  creatorId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator  User          @relation("GroupCreator", fields: [creatorId], references: [id])
+  members  GroupMember[]
+  messages Message[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  userId   String
+  groupId  String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  content        String
+  type           String   @default("text") // text, image, file, voice
+
+  // NOUVEAUX CHAMPS POUR LES FICHIERS 👇
+  fileUrl        String?
+  fileName       String?
+  fileSize       Int?
+  fileMime       String?
+  // 👆
+  duration       Int?
+  senderId       String
+  conversationId String?
+  groupId        String?
+  replyToId      String?
+  isEdited       Boolean  @default(false)
+  isDeleted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sender       User              @relation("SentMessages", fields: [senderId], references: [id])
+  conversation Conversation?     @relation(fields: [conversationId], references: [id])
+  group        Group?            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  replyTo      Message?          @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies      Message[]         @relation("MessageReplies")
+  reactions    MessageReaction[]
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  messageId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+}
