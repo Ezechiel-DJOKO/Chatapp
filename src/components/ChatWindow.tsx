@@ -11,6 +11,7 @@ import UserAvatar from './UserAvatar'
 import MessageContextMenu from './MessageContextMenu'
 import ForwardModal from './ForwardModal'
 import { ArrowLeft, Mic, Trash2 } from 'lucide-react'
+import { compressImage } from '@/lib/imageCompressor'
 import { useNotificationSound } from '@/hooks/useNotificationSound'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import {
@@ -185,16 +186,16 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
   }, [socket, activeChat?.id, activeChat?.type, user?.id])
 
   // Envoi de message vocal corrigé
-  const handleSendVoice = async () => {
+    const handleSendVoice = async () => {
     if (!activeChat) return
 
-    const { blob, duration } = await stopRecording()
+    const { blob, duration, mimeType } = await stopRecording()
     if (!blob || duration < 1) return
 
     setIsUploading(true)
     try {
       const formData = new FormData()
-      formData.append('file', blob, `voice_${Date.now()}.webm`)
+      formData.append('file', blob, `voice_${Date.now()}.${mimeType.includes('mp4') ? 'mp4' : 'webm'}`)
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
@@ -217,7 +218,7 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
             fileUrl: uploadData.url,
             fileName: 'Message vocal',
             fileSize: uploadData.size,
-            fileMime: uploadData.mime || 'audio/webm',
+            fileMime: uploadData.mime || mimeType,
             duration,
           }),
         })
@@ -306,7 +307,7 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
     }
   }
 
-  // Envoi de message ou fichier
+    // Envoi de message ou fichier
   const sendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !activeChat || !user || isUploading) return
 
@@ -314,9 +315,13 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
     let fileData = null
 
     if (selectedFile) {
-      const formData = new FormData()
-      formData.append('file', selectedFile)
       try {
+        // Compression automatique si c'est une photo
+        const fileToUpload = await compressImage(selectedFile)
+
+        const formData = new FormData()
+        formData.append('file', fileToUpload)
+
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
@@ -324,6 +329,10 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
         const uploadData = await uploadRes.json()
         if (uploadData.url) {
           fileData = uploadData
+        } else {
+          toast.error(uploadData.error || "Échec de l'envoi de l'image")
+          setIsUploading(false)
+          return
         }
       } catch (e) {
         toast.error("Erreur lors de l'upload")
@@ -336,7 +345,6 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
     setNewMessage('')
     setSelectedFile(null)
 
-    // Arrêter le typing
     if (socket) {
       socket.emit('typing:stop', {
         conversationId: activeChat.type === 'conversation' ? activeChat.id : undefined,
@@ -345,7 +353,6 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
       })
     }
 
-    // Mode Édition
     if (editingMessage) {
       try {
         const res = await fetch(`/api/messages/${editingMessage.id}`, {
@@ -371,7 +378,6 @@ const handleNewMessage = (data: { conversationId?: string; groupId?: string; mes
       return
     }
 
-    // Mode Envoi normal
     setReplyTo(null)
     try {
       const endpoint =

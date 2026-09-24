@@ -11,10 +11,30 @@ export function useVoiceRecorder() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
+  // Détection du meilleur format audio supporté par le téléphone (iOS/Android)
+  const getSupportedMimeType = () => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/ogg',
+    ]
+    for (const type of types) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
+        return type
+      }
+    }
+    return ''
+  }
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorderRef.current = new MediaRecorder(stream)
+      const mimeType = getSupportedMimeType()
+
+      const options = mimeType ? { mimeType } : undefined
+      mediaRecorderRef.current = new MediaRecorder(stream, options)
       audioChunksRef.current = []
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -23,13 +43,7 @@ export function useVoiceRecorder() {
         }
       }
 
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
-        setAudioBlob(audioBlob)
-        stream.getTracks().forEach((track) => track.stop())
-      }
-
-      mediaRecorderRef.current.start()
+      mediaRecorderRef.current.start(100) // Récupère des données toutes les 100ms
       setIsRecording(true)
       setRecordingTime(0)
 
@@ -38,25 +52,29 @@ export function useVoiceRecorder() {
       }, 1000)
     } catch (err) {
       console.error('Erreur accès micro:', err)
-      alert('Impossible d\'accéder au microphone')
+      alert('Veuillez autoriser l\'accès au microphone dans votre navigateur.')
     }
   }
 
-  const stopRecording = (): Promise<{ blob: Blob; duration: number }> => {
+  const stopRecording = (): Promise<{ blob: Blob; duration: number; mimeType: string }> => {
     return new Promise((resolve) => {
       if (mediaRecorderRef.current && isRecording) {
+        const mimeType = mediaRecorderRef.current.mimeType || 'audio/mp4'
+
         mediaRecorderRef.current.onstop = () => {
-          const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+          const blob = new Blob(audioChunksRef.current, { type: mimeType })
           setAudioBlob(blob)
           if (mediaRecorderRef.current?.stream) {
             mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
           }
-          resolve({ blob, duration: recordingTime })
+          resolve({ blob, duration: recordingTime, mimeType })
         }
 
         mediaRecorderRef.current.stop()
         if (timerRef.current) clearInterval(timerRef.current)
         setIsRecording(false)
+      } else {
+        resolve({ blob: new Blob(), duration: 0, mimeType: '' })
       }
     })
   }
